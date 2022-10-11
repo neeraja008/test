@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<flow name="affirm-in-batchnewFlow" doc:id="3fcf7516-71fb-4166-a346-2fd82fdfc7b7" initialState="started" maxConcurrency="1">
+		<http:listener doc:name="GET /${api.path}" doc:id="8ef29305-e498-4335-9ffb-31b2c445888f" path="${api.path}" config-ref="HTTP_Listener_config" allowedMethods="GET"/>
+		<file:read doc:name="Read" doc:id="58e01536-c369-461d-95a0-4a2f7a1bdd3a" path="${file.path}" outputMimeType="application/xlsx" config-ref="File_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="3695156e-73e1-4682-9e0c-d38c8537327e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---	
+ (payload.empdetails map (item,index)->{
+	"empname": item.empname,
+	"empid": item.empid,
+	"empaddress":item.empaddress,
+    "Bonus": if(item.empaddress =="US" or item.empaddress == "UK") "eligible" else "not-eligible"
+	
+	}) filter ($.Bonus == "eligible")
+	
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="2f5a69e4-0900-4989-bdaf-b6e3f0a10c1f" message='#[payload]'/>
+		<ee:transform doc:name="Transform Message" doc:id="15de7442-8d41-46df-bd1a-3af5e2de61b0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="affirm-in-batchnewBatch_Job" doc:id="d238b186-6147-4e78-9424-6fc9bbc3bfb1" blockSize="1000" target="#[payload]" maxConcurrency="1">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="24725922-f5f6-4d71-bbb8-9760518eef46">
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="643a33ca-2f99-4667-92df-bdd1bafc8aae" size="50">
+						<file:write doc:name="Write" doc:id="bd8c36fe-bad4-4c20-a919-ea076e866619" path="#['C:\Users\golimneeraja\Downloads\output\empdetailsxlsx2022' ++ (now( ) as  String {format:&quot;yyyy/MM/dd hh-mm-ss&quot;}) ++ '.xlsx']">
+							<file:content ><![CDATA[#[output application/xlsx header=true
+---
+{
+	Sheet1: payload
+}]]]></file:content>
+						</file:write>
+						<logger level="INFO" doc:name="Logger" doc:id="20cd6a69-5b27-4df7-bbf4-590d7fa51958" message="#[output application/json&#10;---&#10;payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="a162a2ea-e14b-49f7-9952-98a14fd48e14" message='#["successful records: " ++ sizeOf(payload)]'/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

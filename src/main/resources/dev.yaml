@@ -1,0 +1,10 @@
+http: 
+  host: "localhost"
+  port: "8081"
+  
+api:
+  path: "/test3"
+  
+file:
+   workingdirectory:  C:\Users\golimneeraja\Downloads
+   path:   C:\Users\golimneeraja\Downloads\input\empdetails (1).xlsx 

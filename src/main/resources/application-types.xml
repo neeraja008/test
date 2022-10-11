@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="Excel" format="excel">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type Excel = {|
+  Sheet1?: Array<{|    empname: String,     empid: String,     empaddress: String  |}>
+|}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#58e01536-c369-461d-95a0-4a2f7a1bdd3a">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="Excel"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#3695156e-73e1-4682-9e0c-d38c8537327e">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="Excel"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>
